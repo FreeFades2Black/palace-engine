@@ -1,0 +1,13 @@
+[Unit]
+Description=Palace Deck FastAPI Interactive Station (http://127.0.0.1:8420)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/projects/palace-engine
+ExecStart=%h/projects/palace-engine/.venv/bin/uvicorn engine.server:app --host 127.0.0.1 --port 8420
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

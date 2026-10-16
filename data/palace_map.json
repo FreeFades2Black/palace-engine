@@ -6,7 +6,8 @@
       "category": "Edge & Ingress Networking",
       "aws_services": [
         "Route 53",
-        "AWS Global Accelerator"
+        "AWS Global Accelerator",
+        "Global Accelerator"
       ],
       "networking_primitives": [
         "Anycast",
@@ -14,8 +15,28 @@
         "DNS TTL / Caching",
         "Health Checks"
       ],
+      "scene_narrative": "Twin flashing blue police cruisers (Anycast Static IPs) slam into the gate to bypass the traffic jam. A mail courier on a speeding motorcycle (Route 53) swerves around them, reading GPS signposts.",
+      "encoded_limits": [
+        {
+          "metric": "Static Anycast IPs provided by Global Accelerator",
+          "value": "2",
+          "major_system_peg": "Noah / Gun (2 = n)"
+        },
+        {
+          "metric": "Route 53 Multi-Value Answer max records returned",
+          "value": "8",
+          "major_system_peg": "Ivy / Hive (8 = f/v)"
+        }
+      ],
       "last_reviewed": "2026-10-15",
-      "stability_score": 0.85
+      "stability_score": 0.85,
+      "repetitions": 2,
+      "ease_factor": 2.5,
+      "interval_days": 6,
+      "next_due": "2026-10-21",
+      "confusion_pairs": [
+        "CloudFront Dynamic Caching"
+      ]
     },
     {
       "id": "front_door",
@@ -25,15 +46,33 @@
         "AWS WAF",
         "AWS Shield",
         "Amazon GuardDuty",
-        "AWS IAM"
+        "AWS IAM",
+        "WAF & Shield",
+        "GuardDuty"
       ],
       "networking_primitives": [
         "Layer 7 vs Layer 4 Filtering",
         "VPC Flow Log Inspection",
         "DDoS Mitigation"
       ],
+      "scene_narrative": "A plasma turret at the front door locks onto SQL injection packets and blasts them to freeze intruders, while a robotic guard dog (GuardDuty) sniffs VPC Flow Logs and CloudTrail footprints.",
+      "encoded_limits": [
+        {
+          "metric": "WAF inspection OSI layer",
+          "value": "7",
+          "major_system_peg": "Key / Cow (7 = k/g)"
+        }
+      ],
       "last_reviewed": "2026-10-15",
-      "stability_score": 0.90
+      "stability_score": 0.9,
+      "repetitions": 3,
+      "ease_factor": 2.6,
+      "interval_days": 10,
+      "next_due": "2026-10-25",
+      "confusion_pairs": [
+        "AWS Network Firewall",
+        "Security Groups vs NACLs"
+      ]
     },
     {
       "id": "hallway_thermostat",
@@ -41,6 +80,7 @@
       "category": "Governance, Telemetry & Organization Guardrails",
       "aws_services": [
         "AWS Organizations SCP",
+        "Organizations & SCP",
         "CloudWatch",
         "Amazon SNS"
       ],
@@ -48,8 +88,61 @@
         "Metric Alarms",
         "Cross-Account Resource Policies"
       ],
+      "scene_narrative": "The hallway thermostat begins to burn red-hot and explode when an account exceeds its Service Control Policy boundary, triggering a blaring CloudWatch alarm across the ceiling.",
+      "encoded_limits": [
+        {
+          "metric": "CloudWatch high-resolution custom metric minimum interval (seconds)",
+          "value": "1",
+          "major_system_peg": "Tie / Hat (1 = t/d)"
+        }
+      ],
       "last_reviewed": "2026-10-15",
-      "stability_score": 0.75
+      "stability_score": 0.75,
+      "repetitions": 1,
+      "ease_factor": 2.4,
+      "interval_days": 3,
+      "next_due": "2026-10-18",
+      "confusion_pairs": [
+        "IAM Permission Boundaries"
+      ]
+    },
+    {
+      "id": "porch_mailbox",
+      "name": "Front Porch Mailbox",
+      "category": "Application Integration & Decoupling",
+      "aws_services": [
+        "Amazon SQS",
+        "Amazon SNS",
+        "Integration Decoupling"
+      ],
+      "networking_primitives": [
+        "Queue Polling",
+        "Pub/Sub Fanout",
+        "Dead-Letter Queues"
+      ],
+      "scene_narrative": "A steel mailbox screaming as a mechanical tire crushes 14 letters into it while a blaring siren wakes the entire block.",
+      "encoded_limits": [
+        {
+          "metric": "SQS Maximum Retention Period (14 days)",
+          "value": "14",
+          "major_system_peg": "Tire (1=T, 4=R)"
+        },
+        {
+          "metric": "SQS Max Message Size (256 KB)",
+          "value": "256",
+          "major_system_peg": "Engine (2=N, 5=L, 6=G)"
+        }
+      ],
+      "last_reviewed": "2026-10-15",
+      "stability_score": 0.88,
+      "repetitions": 4,
+      "ease_factor": 2.6,
+      "interval_days": 15,
+      "next_due": "2026-10-30",
+      "confusion_pairs": [
+        "Amazon MQ",
+        "Kinesis Data Streams"
+      ]
     }
   ]
 }

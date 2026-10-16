@@ -1,0 +1,22 @@
+{
+  "last_updated": "2026-10-16T13:30:00+00:00",
+  "total_posts_analyzed": 25,
+  "service_frequency_rankings": {
+    "Storage Disambiguation": 9,
+    "Integration Decoupling": 8,
+    "Aurora": 7,
+    "WAF & Shield": 6,
+    "Organizations & SCP": 5,
+    "Route 53": 5,
+    "Global Accelerator": 4,
+    "GuardDuty": 4,
+    "IAM Identity Center": 3,
+    "Data Analytics": 3
+  },
+  "curated_test_takeaways": [
+    "Exam was heavy on S3 vs EFS vs FSx for Lustre storage disambiguation and lifecycle transitions",
+    "Saw multiple tricky questions comparing Global Accelerator static anycast IPs against CloudFront edge caching",
+    "Make sure you know SQS + SNS fanout patterns and EventBridge schema registry filtering",
+    "Focus on AWS Organizations SCP inheritance vs IAM Permission Boundaries across multi-account setups"
+  ]
+}

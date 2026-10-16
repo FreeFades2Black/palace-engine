@@ -6,6 +6,7 @@ on:
     paths:
       - 'data/**'
       - 'engine/**'
+      - 'tests/**'
       - '.github/workflows/**'
   workflow_dispatch:
 
@@ -28,13 +29,21 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Run Cognitive Quality Linter
+        run: |
+          python engine/cognitive_linter.py
+
       - name: Run Unit Tests
         run: |
           python -m pytest -v
 
-      - name: Execute Gap Analysis & Spaced Repetition Engine
+      - name: Execute Gap Analysis, Trend Correlation & Spaced Repetition Engine
         run: |
-          python engine/scoring.py > evaluation_summary.txt
+          python engine/cognitive_linter.py > evaluation_summary.txt
+          echo "" >> evaluation_summary.txt
+          python engine/correlate.py >> evaluation_summary.txt
+          python engine/scoring.py >> evaluation_summary.txt
+          echo "" >> evaluation_summary.txt
           python engine/suggest.py >> evaluation_summary.txt
           cat evaluation_summary.txt
 

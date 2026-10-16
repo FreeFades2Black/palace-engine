@@ -6,5 +6,7 @@ venv/
 ENV/
 .pytest_cache/
 evaluation_summary.txt
+drill_digest.txt
 gap_report.json
+data/interactions.db
 .DS_Store
