@@ -20,6 +20,8 @@ KINETIC_VERBS = [
     "screaming",
     "blaring",
     "slam",
+    "vaporize",
+    "deflect",
 ]
 
 # Major System consonant phonetic mapping: 0=s/z, 1=t/d, 2=n, 3=m, 4=r, 5=l, 6=j/ch/sh, 7=k/g, 8=f/v, 9=p/b

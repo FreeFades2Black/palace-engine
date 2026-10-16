@@ -1,48 +1,37 @@
 {
   "loci": [
     {
-      "id": "driveway_road",
-      "name": "Driveway / Road Access",
-      "category": "Edge & Ingress Networking",
+      "id": "driveway_curb",
+      "name": "Driveway Curb & Gate",
+      "category": "Edge Ingress & Global Routing",
       "aws_services": [
-        "Route 53",
         "AWS Global Accelerator",
+        "Amazon Route 53",
+        "Route 53",
         "Global Accelerator"
       ],
-      "networking_primitives": [
-        "Anycast",
-        "Latency-based routing",
-        "DNS TTL / Caching",
-        "Health Checks"
-      ],
-      "scene_narrative": "Twin flashing blue police cruisers (Anycast Static IPs) slam into the gate to bypass the traffic jam. A mail courier on a speeding motorcycle (Route 53) swerves around them, reading GPS signposts.",
+      "competency_stage": 1,
+      "scaffolding_retired": false,
+      "stability_score": 0.85,
+      "last_reviewed": "2026-10-15",
+      "scene_narrative": "Twin flashing blue cruisers (Anycast Static IPs) slam into the iron gate, bypassing a traffic jam. A motorcycle courier (Route 53) swerves around them checking GPS signs.",
       "encoded_limits": [
         {
-          "metric": "Static Anycast IPs provided by Global Accelerator",
+          "metric": "Static Anycast IP count",
           "value": "2",
-          "major_system_peg": "Noah / Gun (2 = n)"
-        },
-        {
-          "metric": "Route 53 Multi-Value Answer max records returned",
-          "value": "8",
-          "major_system_peg": "Ivy / Hive (8 = f/v)"
+          "major_system_peg": "Noah / Gun (2 = N)"
         }
       ],
-      "last_reviewed": "2026-10-15",
-      "stability_score": 0.85,
-      "competency_stage": 2,
-      "repetitions": 2,
-      "ease_factor": 2.5,
-      "interval_days": 6,
-      "next_due": "2026-10-21",
       "confusion_pairs": [
-        "CloudFront Dynamic Caching"
-      ]
+        "Amazon CloudFront",
+        "Route 53 Weighted Routing"
+      ],
+      "verified_competencies": []
     },
     {
-      "id": "front_door",
-      "name": "Front Door Perimeter",
-      "category": "Perimeter Security & Auth",
+      "id": "front_door_perimeter",
+      "name": "Front Door & Threshold",
+      "category": "Perimeter Defense & Threat Detection",
       "aws_services": [
         "AWS WAF",
         "AWS Shield",
@@ -51,102 +40,57 @@
         "WAF & Shield",
         "GuardDuty"
       ],
-      "networking_primitives": [
-        "Layer 7 vs Layer 4 Filtering",
-        "VPC Flow Log Inspection",
-        "DDoS Mitigation"
-      ],
-      "scene_narrative": "A plasma turret at the front door locks onto SQL injection packets and blasts them to freeze intruders, while a robotic guard dog (GuardDuty) sniffs VPC Flow Logs and CloudTrail footprints.",
-      "encoded_limits": [
-        {
-          "metric": "WAF inspection OSI layer",
-          "value": "7",
-          "major_system_peg": "Key / Cow (7 = k/g)"
-        }
-      ],
-      "last_reviewed": "2026-10-15",
-      "stability_score": 0.9,
-      "competency_stage": 3,
-      "repetitions": 3,
-      "ease_factor": 2.6,
-      "interval_days": 10,
-      "next_due": "2026-10-25",
-      "confusion_pairs": [
-        "AWS Network Firewall",
-        "Security Groups vs NACLs"
-      ]
-    },
-    {
-      "id": "hallway_thermostat",
-      "name": "Thermostat & Lockbox",
-      "category": "Governance, Telemetry & Organization Guardrails",
-      "aws_services": [
-        "AWS Organizations SCP",
-        "Organizations & SCP",
-        "CloudWatch",
-        "Amazon SNS"
-      ],
-      "networking_primitives": [
-        "Metric Alarms",
-        "Cross-Account Resource Policies"
-      ],
-      "scene_narrative": "The hallway thermostat begins to burn red-hot and explode when an account exceeds its Service Control Policy boundary, triggering a blaring CloudWatch alarm across the ceiling.",
-      "encoded_limits": [
-        {
-          "metric": "CloudWatch high-resolution custom metric minimum interval (seconds)",
-          "value": "1",
-          "major_system_peg": "Tie / Hat (1 = t/d)"
-        }
-      ],
-      "last_reviewed": "2026-10-15",
-      "stability_score": 0.75,
       "competency_stage": 1,
-      "repetitions": 1,
-      "ease_factor": 2.4,
-      "interval_days": 3,
-      "next_due": "2026-10-18",
+      "scaffolding_retired": false,
+      "stability_score": 0.9,
+      "last_reviewed": "2026-10-15",
+      "scene_narrative": "A bouncer with a clipboard (IAM) checks IDs at the door. An armored riot shield (Shield Advanced) deflects a boulder. A radar dish (GuardDuty) sweeps VPC logs while a smart screen (WAF) vaporizes SQL injection packets.",
+      "encoded_limits": [
+        {
+          "metric": "GuardDuty log analysis sources",
+          "value": "3",
+          "major_system_peg": "Ma / Cam (3 = M: CloudTrail, VPC Flow, DNS)"
+        }
+      ],
       "confusion_pairs": [
-        "IAM Permission Boundaries"
-      ]
+        "Security Groups vs Network ACLs",
+        "Amazon Inspector",
+        "AWS Macie"
+      ],
+      "verified_competencies": []
     },
     {
       "id": "porch_mailbox",
       "name": "Front Porch Mailbox",
-      "category": "Application Integration & Decoupling",
+      "category": "Decoupling & Event Ingestion",
       "aws_services": [
         "Amazon SQS",
         "Amazon SNS",
         "Integration Decoupling"
       ],
-      "networking_primitives": [
-        "Queue Polling",
-        "Pub/Sub Fanout",
-        "Dead-Letter Queues"
-      ],
-      "scene_narrative": "A steel mailbox screaming as a mechanical tire crushes 14 letters into it while a blaring siren wakes the entire block.",
+      "competency_stage": 1,
+      "scaffolding_retired": false,
+      "stability_score": 0.75,
+      "last_reviewed": "2026-10-15",
+      "scene_narrative": "A reinforced mailbox screaming as a mechanical tire crushes 14 letters into it while a loud horn alerts every window on the street.",
       "encoded_limits": [
         {
-          "metric": "SQS Maximum Retention Period (14 days)",
+          "metric": "SQS Max Retention Period (14 days)",
           "value": "14",
           "major_system_peg": "Tire (1=T, 4=R)"
         },
         {
-          "metric": "SQS Max Message Size (256 KB)",
-          "value": "256",
-          "major_system_peg": "Engine (2=N, 5=L, 6=G)"
+          "metric": "SQS Default Visibility Timeout (30 seconds)",
+          "value": "30",
+          "major_system_peg": "Mouse (3=M, 0=S)"
         }
       ],
-      "last_reviewed": "2026-10-15",
-      "stability_score": 0.88,
-      "competency_stage": 2,
-      "repetitions": 4,
-      "ease_factor": 2.6,
-      "interval_days": 15,
-      "next_due": "2026-10-30",
       "confusion_pairs": [
+        "Amazon Kinesis Data Streams",
         "Amazon MQ",
-        "Kinesis Data Streams"
-      ]
+        "Amazon EventBridge"
+      ],
+      "verified_competencies": []
     }
   ]
 }

@@ -3,18 +3,18 @@
   "exam_source": "SAA-C03 Daily Scenario Drill",
   "questions_evaluated": [
     {
-      "locus_id": "driveway_road",
+      "locus_id": "driveway_curb",
       "score": 4,
       "latency_ms": 8400
     },
     {
-      "locus_id": "hallway_thermostat",
+      "locus_id": "porch_mailbox",
       "score": 2,
       "latency_ms": 19200,
       "distractor_service": "AWS Control Tower Guardrails"
     },
     {
-      "locus_id": "porch_mailbox",
+      "locus_id": "front_door_perimeter",
       "score": 5,
       "latency_ms": 5100
     }

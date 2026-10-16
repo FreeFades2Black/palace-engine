@@ -27,12 +27,11 @@ from engine.suggest import suggest_next_drills
 
 def test_schemas_and_parser():
     palace = load_palace_map("data")
-    assert len(palace["loci"]) >= 4
+    assert len(palace["loci"]) >= 3
     ids = {l["id"] for l in palace["loci"]}
     assert {
-        "driveway_road",
-        "front_door",
-        "hallway_thermostat",
+        "driveway_curb",
+        "front_door_perimeter",
         "porch_mailbox",
     }.issubset(ids)
 
@@ -54,14 +53,14 @@ def test_competency_gate_and_rubric(tmp_path):
     assert "BOUNDARY_DISCRIMINATION" in RUBRIC_EVALUATION_PROMPT
 
     # Stage 1 -> Stage 2 promotion (<= 2200ms and boundary identified)
-    gate1 = CompetencyGate("hallway_thermostat", current_stage=1)
+    gate1 = CompetencyGate("porch_mailbox", current_stage=1)
     ev1 = CompetencyEvidence(factual_latency_ms=1800, correct_boundary_identified=True)
     res1 = gate1.evaluate_promotion(ev1)
     assert res1["new_stage"] == 2
     assert res1["action"] == "PROMOTE"
 
     # Stage 2 -> Stage 1 demotion on boundary failure
-    gate2 = CompetencyGate("driveway_road", current_stage=2)
+    gate2 = CompetencyGate("driveway_curb", current_stage=2)
     ev_fail = CompetencyEvidence(factual_latency_ms=1500, correct_boundary_identified=False)
     res_demote = gate2.evaluate_promotion(ev_fail)
     assert res_demote["new_stage"] == 1
@@ -78,7 +77,7 @@ def test_competency_gate_and_rubric(tmp_path):
     assert res2["action"] == "PROMOTE"
 
     # Stage 3 -> Stage 4 mastery (boundary + >= 3 tradeoffs + >= 1 failure mode)
-    gate3 = CompetencyGate("front_door", current_stage=3)
+    gate3 = CompetencyGate("front_door_perimeter", current_stage=3)
     ev3 = CompetencyEvidence(
         factual_latency_ms=3000,
         correct_boundary_identified=True,
@@ -89,10 +88,9 @@ def test_competency_gate_and_rubric(tmp_path):
     assert res3["new_stage"] == 4
     assert res3["action"] == "PROMOTE_TO_MASTERY"
 
-    # Verify rubric evaluation and apply_competency_transition
     rubric = evaluate_candidate_response(
         "SQS FIFO 14-day retention vs Kinesis: addresses cost, latency, and operational overhead while using a DLQ redrive policy for poison pill and duplicate messages.",
-        distractors=["Kinesis Data Streams"],
+        distractors=["Amazon Kinesis Data Streams"],
     )
     assert rubric["boundary_discrimination"] is True
     assert len(rubric["tradeoffs_identified"]) >= 3
@@ -101,9 +99,9 @@ def test_competency_gate_and_rubric(tmp_path):
     evidence_obj = rubric_to_evidence(rubric, factual_latency_ms=1900)
     temp_palace = tmp_path / "palace_map.json"
     shutil.copy(Path("data/palace_map.json"), temp_palace)
-    transition = apply_competency_transition("front_door", evidence_obj, str(temp_palace))
-    assert transition["stage_before"] == 3
-    assert transition["stage_after"] == 4
+    transition = apply_competency_transition("front_door_perimeter", evidence_obj, str(temp_palace))
+    assert transition["stage_before"] == 1
+    assert transition["stage_after"] == 2
 
 
 def test_adaptive_srs_and_sm2(tmp_path):
@@ -124,8 +122,8 @@ def test_adaptive_srs_and_sm2(tmp_path):
         str(temp_data / "palace_map.json"),
     )
     loci_by_id = {l["id"]: l for l in updated_palace["loci"]}
-    assert loci_by_id["hallway_thermostat"]["interval_days"] == 1
-    assert "AWS Control Tower Guardrails" in loci_by_id["hallway_thermostat"]["confusion_pairs"]
+    assert loci_by_id["porch_mailbox"]["interval_days"] == 1
+    assert "AWS Control Tower Guardrails" in loci_by_id["porch_mailbox"]["confusion_pairs"]
 
 
 def test_scraper_and_correlate():
@@ -142,9 +140,9 @@ def test_scraper_and_correlate():
     assert len(notes) >= 1
 
     radar = correlate_palace_with_trends("data/palace_map.json", "data/exam_trends.json")
-    assert len(radar) >= 4
+    assert len(radar) >= 3
     statuses = {r["id"]: r["status"] for r in radar}
-    assert "CRITICAL DEFICIT" in statuses["hallway_thermostat"]
+    assert "CRITICAL DEFICIT" in statuses["porch_mailbox"]
 
 
 def test_scoring_and_suggestions(tmp_path):
@@ -153,22 +151,22 @@ def test_scoring_and_suggestions(tmp_path):
 
     gaps, loci_map = evaluate_gaps(str(temp_data))
     assert len(gaps) >= 1
-    assert loci_map["driveway_road"]["stability_score"] >= 0.85
-    assert loci_map["front_door"]["stability_score"] >= 0.90
+    assert loci_map["driveway_curb"]["stability_score"] >= 0.85
+    assert loci_map["front_door_perimeter"]["stability_score"] >= 0.90
 
     saved = json.loads((temp_data / "palace_map.json").read_text(encoding="utf-8"))
     assert "loci" in saved
 
     drills = suggest_next_drills(str(temp_data), top_n=2)
     assert len(drills) == 2
-    assert drills[0]["id"] == "hallway_thermostat"
+    assert drills[0]["id"] == "porch_mailbox"
 
 
 def test_db_and_fastapi_deck(tmp_path):
     test_db = tmp_path / "interactions.db"
     init_db(test_db)
     record_interaction(
-        "driveway_road",
+        "driveway_curb",
         1800,
         5,
         stage_before=1,
@@ -201,9 +199,9 @@ def test_db_and_fastapi_deck(tmp_path):
     assert manifest_resp.status_code == 200
     assert manifest_resp.json()["short_name"] == "PalaceDeck"
 
-    locus_resp = client.get("/api/locus/driveway_road")
+    locus_resp = client.get("/api/locus/driveway_curb")
     assert locus_resp.status_code == 200
-    assert locus_resp.json()["id"] == "driveway_road"
+    assert locus_resp.json()["id"] == "driveway_curb"
 
     next_resp = client.get("/api/drill/next")
     assert next_resp.status_code == 200
