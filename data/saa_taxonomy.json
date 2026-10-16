@@ -1,0 +1,45 @@
+{
+  "exam": "AWS Certified Solutions Architect - Associate (SAA-C03)",
+  "domains": [
+    {
+      "id": "domain_1",
+      "name": "Design Secure Architectures",
+      "weight_percent": 30,
+      "services": ["AWS IAM", "AWS WAF", "AWS Shield", "Amazon GuardDuty", "AWS Organizations SCP", "AWS KMS"],
+      "key_traps": [
+        "SCPs do not grant permissions; they only define maximum permission boundaries across accounts",
+        "WAF operates at Layer 7 (HTTP/HTTPS) while Network Firewall and Security Groups/NACLs operate at Layers 3/4",
+        "GuardDuty analyzes CloudTrail, VPC Flow Logs, and DNS logs without deploying agents"
+      ]
+    },
+    {
+      "id": "domain_2",
+      "name": "Design Resilient Architectures",
+      "weight_percent": 26,
+      "services": ["Route 53", "AWS Global Accelerator", "Elastic Load Balancing", "Amazon Aurora"],
+      "key_traps": [
+        "Global Accelerator provides two static Anycast IPs and routes over the AWS global network, whereas CloudFront caches content at edge locations",
+        "Route 53 Multi-Value Answer returns up to 8 healthy records (not a substitute for an ELB)"
+      ]
+    },
+    {
+      "id": "domain_3",
+      "name": "Design High-Performing Architectures",
+      "weight_percent": 24,
+      "services": ["Amazon CloudFront", "Amazon ElastiCache", "Amazon EBS", "Amazon EFS"],
+      "key_traps": [
+        "Global Accelerator improves performance for non-HTTP (TCP/UDP) and dynamic HTTP workloads requiring static IPs",
+        "DNS TTL caching behavior vs immediate failover via Global Accelerator health checks"
+      ]
+    },
+    {
+      "id": "domain_4",
+      "name": "Design Cost-Optimized Architectures",
+      "weight_percent": 20,
+      "services": ["AWS Budgets", "Amazon S3", "CloudWatch", "Amazon SNS"],
+      "key_traps": [
+        "VPC Gateway Endpoints exist only for S3 and DynamoDB and are free; Interface Endpoints use PrivateLink and incur hourly + data charges"
+      ]
+    }
+  ]
+}

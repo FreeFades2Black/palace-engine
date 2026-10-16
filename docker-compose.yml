@@ -1,0 +1,10 @@
+services:
+  palace-engine:
+    image: python:3.11-slim
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+             python engine/scoring.py &&
+             python engine/suggest.py"

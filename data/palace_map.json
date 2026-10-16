@@ -1,0 +1,55 @@
+{
+  "loci": [
+    {
+      "id": "driveway_road",
+      "name": "Driveway / Road Access",
+      "category": "Edge & Ingress Networking",
+      "aws_services": [
+        "Route 53",
+        "AWS Global Accelerator"
+      ],
+      "networking_primitives": [
+        "Anycast",
+        "Latency-based routing",
+        "DNS TTL / Caching",
+        "Health Checks"
+      ],
+      "last_reviewed": "2026-10-15",
+      "stability_score": 0.85
+    },
+    {
+      "id": "front_door",
+      "name": "Front Door Perimeter",
+      "category": "Perimeter Security & Auth",
+      "aws_services": [
+        "AWS WAF",
+        "AWS Shield",
+        "Amazon GuardDuty",
+        "AWS IAM"
+      ],
+      "networking_primitives": [
+        "Layer 7 vs Layer 4 Filtering",
+        "VPC Flow Log Inspection",
+        "DDoS Mitigation"
+      ],
+      "last_reviewed": "2026-10-15",
+      "stability_score": 0.90
+    },
+    {
+      "id": "hallway_thermostat",
+      "name": "Thermostat & Lockbox",
+      "category": "Governance, Telemetry & Organization Guardrails",
+      "aws_services": [
+        "AWS Organizations SCP",
+        "CloudWatch",
+        "Amazon SNS"
+      ],
+      "networking_primitives": [
+        "Metric Alarms",
+        "Cross-Account Resource Policies"
+      ],
+      "last_reviewed": "2026-10-15",
+      "stability_score": 0.75
+    }
+  ]
+}

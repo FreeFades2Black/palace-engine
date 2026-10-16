@@ -1,0 +1,53 @@
+# .github/workflows/test-and-evaluate.yml
+name: Memory Palace Evaluation & Gap Analysis
+
+on:
+  push:
+    paths:
+      - 'data/**'
+      - 'engine/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+jobs:
+  analyze-gaps:
+    runs-on: ubuntu-latest
+    env:
+      OMARCHY_WEBHOOK_URL: ${{ secrets.OMARCHY_WEBHOOK_URL }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Unit Tests
+        run: |
+          pytest -v
+
+      - name: Execute Gap Analysis & Spaced Repetition Engine
+        run: |
+          python engine/scoring.py > evaluation_summary.txt
+          python engine/suggest.py >> evaluation_summary.txt
+          cat evaluation_summary.txt
+
+      - name: Post Job Summary to GitHub Actions
+        run: |
+          echo "### AWS SAA-C03 Memory Palace & Gap Report" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          cat evaluation_summary.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Trigger Omarchy Sync (Optional Webhook)
+        if: env.OMARCHY_WEBHOOK_URL != ''
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+            -d '{"status": "evaluated", "repo": "${{ github.repository }}"}' \
+            "$OMARCHY_WEBHOOK_URL"
