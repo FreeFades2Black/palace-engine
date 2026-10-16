@@ -190,9 +190,16 @@ def test_db_and_fastapi_deck(tmp_path):
     assert row == (1, 2, 1, '["cost", "latency"]', '["poison_pill"]')
 
     client = TestClient(app)
-    resp = client.get("/")
+    resp = client.get("/", headers={"Cf-Access-Authenticated-User-Email": "architect@omarchy.local"})
     assert resp.status_code == 200
     assert "[PALACE-DECK]" in resp.text
+    assert 'rel="manifest" href="/static/manifest.json"' in resp.text
+    assert "width=device-width, initial-scale=1.0" in resp.text
+    assert "architect@omarchy.local" in resp.text
+
+    manifest_resp = client.get("/static/manifest.json")
+    assert manifest_resp.status_code == 200
+    assert manifest_resp.json()["short_name"] == "PalaceDeck"
 
     locus_resp = client.get("/api/locus/driveway_road")
     assert locus_resp.status_code == 200

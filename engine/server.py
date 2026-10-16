@@ -1,11 +1,12 @@
 # engine/server.py
 import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from engine.adaptive_srs import calculate_sm2
 from engine.competency_gate import (
-    STAGE_LABELS,
     CompetencyEvidence,
     CompetencyGate,
     apply_competency_transition,
@@ -16,11 +17,17 @@ from engine.evaluator_rubric import evaluate_candidate_response, rubric_to_evide
 app = FastAPI(title="Palace Deck")
 init_db()
 
+STATIC_DIR = Path("static")
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 
 @app.get("/", response_class=HTMLResponse)
-def index():
+def index(req: Request):
     with open("data/palace_map.json", "r", encoding="utf-8") as f:
         palace = json.load(f)
+
+    cf_identity = req.headers.get("Cf-Access-Authenticated-User-Email", "local-omarchy-session")
 
     loci_items = "".join(
         [
@@ -31,31 +38,42 @@ def index():
         ]
     )
 
-    # Minimalist, keyboard-first visual UI built for tiling managers
+    # Minimalist, keyboard-first & mobile PWA visual UI built for tiling managers & Cloudflare Zero Trust
     return f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <link rel="manifest" href="/static/manifest.json">
       <title>Palace Deck // SAA-C03 Control</title>
       <style>
-        body {{ background: #0f111a; color: #e6edf3; font-family: monospace; margin: 2rem; }}
-        .grid {{ display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }}
-        .card {{ background: #161b22; border: 1px solid #30363d; padding: 1.5rem; border-radius: 8px; }}
+        body {{ background: #0f111a; color: #e6edf3; font-family: monospace; margin: 1.5rem; }}
+        .header-bar {{ display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }}
+        .grid {{ display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; }}
+        @media (max-width: 768px) {{
+          body {{ margin: 0.75rem; }}
+          .grid {{ grid-template-columns: 1fr; gap: 1rem; }}
+        }}
+        .card {{ background: #161b22; border: 1px solid #30363d; padding: 1.25rem; border-radius: 8px; }}
         .badge {{ background: #238636; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; float: right; }}
         .stage-banner {{ background: #1f6feb; color: #fff; padding: 0.4rem 0.8rem; border-radius: 4px; display: inline-block; margin-bottom: 0.5rem; }}
         .locus-item {{ padding: 0.75rem; border-bottom: 1px solid #21262d; cursor: pointer; }}
         .locus-item:hover {{ background: #1f242c; }}
         .kinetic-box {{ border-left: 3px solid #f78166; padding-left: 1rem; margin: 1rem 0; color: #ffab70; }}
-        textarea {{ width: 100%; background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; padding: 0.6rem; font-family: monospace; margin: 0.5rem 0; }}
-        button {{ background: #238636; color: white; border: none; padding: 0.6rem 1.2rem; cursor: pointer; border-radius: 4px; margin-right: 0.5rem; }}
+        textarea {{ width: 100%; box-sizing: border-box; background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; padding: 0.6rem; font-family: monospace; margin: 0.5rem 0; }}
+        button {{ background: #238636; color: white; border: none; padding: 0.6rem 1.1rem; cursor: pointer; border-radius: 4px; margin: 0.25rem 0.4rem 0.25rem 0; }}
       </style>
     </head>
     <body>
-      <h2>[PALACE-DECK] AWS SAA Cognitive & Evidentiary Gate Engine</h2>
+      <div class="header-bar">
+        <h2>[PALACE-DECK] AWS SAA Cognitive & Evidentiary Gate Engine</h2>
+        <small>Auth: {cf_identity}</small>
+      </div>
       <div class="grid">
         <div class="card">
           <h3>Memory Loci</h3>
+          <button onclick="loadNextDecaying()" style="width:100%; margin-bottom:0.75rem; background:#8957e5;">Next Decaying Node [Space]</button>
           <div id="loci-list">
             {loci_items}
           </div>
