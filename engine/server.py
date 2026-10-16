@@ -179,19 +179,32 @@ def get_locus(locus_id: str):
 
 @app.get("/api/drill/next")
 def get_next_drill():
+    from engine.correlate import calculate_priority_score
+
     with open("data/palace_map.json", "r", encoding="utf-8") as f:
         palace = json.load(f)
-    loci = sorted(
-        palace.get("loci", []),
-        key=lambda l: (
-            l.get("competency_stage", 1),
-            l.get("stability_score", 0.5),
-            l.get("next_due", "9999-12-31"),
-        ),
-    )
+    trends_rankings = {}
+    trends_file = Path("data/exam_trends.json")
+    if trends_file.exists():
+        with open(trends_file, "r", encoding="utf-8") as f:
+            trends_rankings = json.load(f).get("service_frequency_rankings", {})
+
+    loci = palace.get("loci", [])
     if not loci:
         return JSONResponse(status_code=404, content={"error": "No loci configured"})
-    return loci[0]
+
+    def locus_priority(loc):
+        heat = sum(trends_rankings.get(s, 0) for s in loc.get("aws_services", []))
+        return calculate_priority_score(
+            competency_stage=loc.get("competency_stage", 1),
+            heat_score=heat,
+            stability=loc.get("stability_score", 0.5),
+        )
+
+    ranked = sorted(loci, key=locus_priority, reverse=True)
+    top = dict(ranked[0])
+    top["priority_score"] = locus_priority(top)
+    return top
 
 
 @app.post("/api/drill/submit")
@@ -272,8 +285,8 @@ async def submit_drill(req: Request):
 async def evaluate_competency(req: Request):
     payload = await req.json()
     locus_id = payload["locus_id"]
-    response_text = payload.get("response_text", "")
-    latency_ms = int(payload.get("latency_ms", 2000))
+    response_text = payload.get("answer") or payload.get("response_text", "")
+    latency_ms = int(payload.get("latency_ms", 1500))
 
     with open("data/palace_map.json", "r", encoding="utf-8") as f:
         palace = json.load(f)

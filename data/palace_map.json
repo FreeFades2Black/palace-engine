@@ -68,7 +68,7 @@
         "Amazon SNS",
         "Integration Decoupling"
       ],
-      "competency_stage": 1,
+      "competency_stage": 2,
       "scaffolding_retired": false,
       "stability_score": 0.75,
       "last_reviewed": "2026-10-15",
@@ -90,7 +90,9 @@
         "Amazon MQ",
         "Amazon EventBridge"
       ],
-      "verified_competencies": []
+      "verified_competencies": [
+        "Gate 1->2: Stage 2: Boundary Disambiguation"
+      ]
     }
   ]
 }

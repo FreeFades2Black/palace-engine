@@ -1,7 +1,13 @@
 # tests/test_competency_eval.py
+import shutil
+from pathlib import Path
 import pytest
+from fastapi.testclient import TestClient
+
 from engine.competency_gate import CompetencyGate, CompetencyEvidence
+from engine.correlate import calculate_priority_score
 from engine.evaluator_rubric import rubric_to_evidence
+from engine.server import app
 
 
 def test_stage_1_to_2_promotion_on_fast_recall():
@@ -48,3 +54,9 @@ def test_stage_2_to_3_promotion_with_tradeoffs():
     result = gate.evaluate_promotion(evidence)
     assert result["action"] == "PROMOTE"
     assert result["new_stage"] == 3
+
+
+def test_priority_score_formula():
+    # Priority Score = (5 - competency_stage) * 2.0 + (heat_score * 1.5) - (stability * 1.0)
+    score = calculate_priority_score(competency_stage=1, heat_score=8, stability=0.75)
+    assert score == 19.25

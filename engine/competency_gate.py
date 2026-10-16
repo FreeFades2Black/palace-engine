@@ -124,6 +124,11 @@ def apply_competency_transition(
             stage_after = outcome["new_stage"]
             locus["competency_stage"] = stage_after
             locus["scaffolding_retired"] = stage_after == 4
+            if stage_after > stage_before:
+                verified = locus.setdefault("verified_competencies", [])
+                gate_tag = f"Gate {stage_before}->{stage_after}: {STAGE_LABELS.get(stage_after)}"
+                if gate_tag not in verified:
+                    verified.append(gate_tag)
             result = {
                 "locus_id": locus_id,
                 "stage_before": stage_before,

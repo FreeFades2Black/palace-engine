@@ -1,6 +1,20 @@
 # engine/correlate.py
 import json
-from pathlib import Path
+
+
+def calculate_priority_score(
+    competency_stage: int, heat_score: int, stability: float
+) -> float:
+    """
+    Priority Score = (5 - competency_stage) * 2.0 + (heat_score * 1.5) - (stability * 1.0)
+    Higher score means higher urgency in the daily drill queue.
+    """
+    return round(
+        (5 - int(competency_stage)) * 2.0
+        + (float(heat_score) * 1.5)
+        - (float(stability) * 1.0),
+        2,
+    )
 
 
 def correlate_palace_with_trends(
@@ -23,6 +37,12 @@ def correlate_palace_with_trends(
         # Check if any assigned service is currently hot in exam debriefs
         heat_score = sum(rankings.get(svc, 0) for svc in assigned)
         stability = locus.get("stability_score", 0.5)
+        competency_stage = locus.get("competency_stage", 1)
+        priority_score = calculate_priority_score(
+            competency_stage=competency_stage,
+            heat_score=heat_score,
+            stability=stability,
+        )
 
         status = "HEALTHY"
         if heat_score > 3 and stability < 0.8:
@@ -34,13 +54,23 @@ def correlate_palace_with_trends(
             "id": locus["id"],
             "name": locus_name,
             "status": status,
+            "competency_stage": competency_stage,
             "heat_score": heat_score,
             "stability": stability,
+            "priority_score": priority_score,
             "services": assigned,
         })
 
-        print(f"[{status}] {locus_name}")
-        print(f"  Services: {assigned} | Heat Score: {heat_score} | Stability: {stability:.2f}\n")
+    results.sort(key=lambda r: r["priority_score"], reverse=True)
+
+    for r in results:
+        print(
+            f"[{r['status']}] {r['name']} (Priority Score: {r['priority_score']:.2f})"
+        )
+        print(
+            f"  Stage: {r['competency_stage']} | Heat Score: {r['heat_score']} "
+            f"| Stability: {r['stability']:.2f} | Services: {r['services']}\n"
+        )
 
     return results
 
