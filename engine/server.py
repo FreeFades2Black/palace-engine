@@ -4,7 +4,14 @@ from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from engine.adaptive_srs import calculate_sm2
+from engine.competency_gate import (
+    STAGE_LABELS,
+    CompetencyEvidence,
+    CompetencyGate,
+    apply_competency_transition,
+)
 from engine.db import get_telemetry_metrics, init_db, record_interaction
+from engine.evaluator_rubric import evaluate_candidate_response, rubric_to_evidence
 
 app = FastAPI(title="Palace Deck")
 init_db()
@@ -18,7 +25,7 @@ def index():
     loci_items = "".join(
         [
             f"<div class='locus-item' onclick='selectLocus(\"{l['id']}\")'>"
-            f"<b>{l['name']}</b> <span class='badge'>{int(l.get('stability_score', 0.8) * 100)}%</span>"
+            f"<b>{l['name']}</b> <span class='badge'>Stage {l.get('competency_stage', 1)} | {int(l.get('stability_score', 0.8) * 100)}%</span>"
             f"<br><small>{', '.join(l['aws_services'])}</small></div>"
             for l in palace["loci"]
         ]
@@ -36,14 +43,16 @@ def index():
         .grid {{ display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }}
         .card {{ background: #161b22; border: 1px solid #30363d; padding: 1.5rem; border-radius: 8px; }}
         .badge {{ background: #238636; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; float: right; }}
+        .stage-banner {{ background: #1f6feb; color: #fff; padding: 0.4rem 0.8rem; border-radius: 4px; display: inline-block; margin-bottom: 0.5rem; }}
         .locus-item {{ padding: 0.75rem; border-bottom: 1px solid #21262d; cursor: pointer; }}
         .locus-item:hover {{ background: #1f242c; }}
         .kinetic-box {{ border-left: 3px solid #f78166; padding-left: 1rem; margin: 1rem 0; color: #ffab70; }}
+        textarea {{ width: 100%; background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; padding: 0.6rem; font-family: monospace; margin: 0.5rem 0; }}
         button {{ background: #238636; color: white; border: none; padding: 0.6rem 1.2rem; cursor: pointer; border-radius: 4px; margin-right: 0.5rem; }}
       </style>
     </head>
     <body>
-      <h2>[PALACE-DECK] AWS SAA Cognitive Ingestion Engine</h2>
+      <h2>[PALACE-DECK] AWS SAA Cognitive & Evidentiary Gate Engine</h2>
       <div class="grid">
         <div class="card">
           <h3>Memory Loci</h3>
@@ -52,7 +61,7 @@ def index():
           </div>
         </div>
         <div class="card" id="detail-panel">
-          <h3>Active Recall Station</h3>
+          <h3>Active Recall & Evidentiary Gate Station</h3>
           <p>Select a locus or press <b>[Space]</b> to load next decaying node.</p>
           <div id="active-locus-view"></div>
         </div>
@@ -67,15 +76,23 @@ def index():
           fetch('/api/locus/' + id)
             .then(r => r.json())
             .then(data => {{
+              const stage = data.competency_stage || 1;
+              const sceneHtml = stage < 4
+                ? `<div class="kinetic-box">${{data.scene_narrative || ''}}</div>`
+                : `<div class="kinetic-box"><i>[Stage 4 Production Instinct Active: Mnemonic scaffolding retired]</i></div>`;
               document.getElementById('active-locus-view').innerHTML = `
+                <div class="stage-banner">Competency Gate: Stage ${{stage}} / 4</div>
                 <h4>${{data.name}}</h4>
-                <div class="kinetic-box">${{data.scene_narrative || ''}}</div>
+                ${{sceneHtml}}
                 <p><b>Major System Pegs:</b> ${{JSON.stringify(data.encoded_limits || [])}}</p>
                 <p><b>Confusion Pairs:</b> ${{(data.confusion_pairs || []).join(', ') || 'None'}}</p>
-                <p>Rate your instant retrieval (Keys 1-5):</p>
+                <p><b>Evidentiary Synthesis (Boundary / Trade-offs / Failure Modes):</b></p>
+                <textarea id="evidence-input" rows="3" placeholder="Explain why adjacent services fail, cost/latency/blast-radius trade-offs, and failure mode mitigations (DLQ, idempotency, failover)..."></textarea>
+                <p>Rate your instant retrieval (Keys 1-5) or submit Evidence Gate:</p>
                 <button onclick="submitScore(1)">1 (Blackout)</button>
                 <button onclick="submitScore(3)">3 (Strained)</button>
                 <button onclick="submitScore(5)">5 (Instant)</button>
+                <button onclick="submitCompetencyEvidence()" style="background:#1f6feb;">Evaluate Competency Gate</button>
               `;
             }});
         }}
@@ -101,7 +118,24 @@ def index():
           }});
         }}
 
+        function submitCompetencyEvidence() {{
+          if (!currentLocus) return;
+          const latency = Date.now() - startTime;
+          const responseText = (document.getElementById('evidence-input') || {{}}).value || '';
+          fetch('/api/competency/evaluate', {{
+            method: 'POST',
+            headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{ locus_id: currentLocus, response_text: responseText, latency_ms: latency }})
+          }})
+          .then(r => r.json())
+          .then(res => {{
+            alert(`[${{res.action}}] Stage ${{res.stage_before}} -> Stage ${{res.stage_after}}: ${{res.reason}}`);
+            location.reload();
+          }});
+        }}
+
         document.addEventListener('keydown', (e) => {{
+          if (e.target && e.target.tagName === 'TEXTAREA') return;
           if (e.code === 'Space') {{
             e.preventDefault();
             loadNextDecaying();
@@ -131,7 +165,11 @@ def get_next_drill():
         palace = json.load(f)
     loci = sorted(
         palace.get("loci", []),
-        key=lambda l: (l.get("stability_score", 0.5), l.get("next_due", "9999-12-31")),
+        key=lambda l: (
+            l.get("competency_stage", 1),
+            l.get("stability_score", 0.5),
+            l.get("next_due", "9999-12-31"),
+        ),
     )
     if not loci:
         return JSONResponse(status_code=404, content={"error": "No loci configured"})
@@ -145,19 +183,29 @@ async def submit_drill(req: Request):
     score = int(payload["score"])
     latency_ms = int(payload["latency_ms"])
     distractor = payload.get("distractor_selected")
+    tradeoffs = payload.get("tradeoffs_addressed", [])
+    failure_modes = payload.get("failure_modes_mitigated", [])
+    boundary_passed = payload.get("correct_boundary_identified", score >= 3)
 
-    record_interaction(
-        locus_id=locus_id,
-        latency_ms=latency_ms,
-        score=score,
-        distractor=distractor,
-    )
-
-    # Also calibrate SM-2 interval in palace_map.json
     with open("data/palace_map.json", "r", encoding="utf-8") as f:
         palace = json.load(f)
+
+    stage_before = 1
+    stage_after = 1
+
     for locus in palace.get("loci", []):
         if locus["id"] == locus_id:
+            stage_before = int(locus.get("competency_stage", 1))
+            evidence = CompetencyEvidence(
+                factual_latency_ms=latency_ms,
+                correct_boundary_identified=bool(boundary_passed),
+                tradeoffs_addressed=tradeoffs,
+                failure_modes_mitigated=failure_modes,
+            )
+            gate_outcome = CompetencyGate(locus_id, stage_before).evaluate_promotion(evidence)
+            stage_after = gate_outcome["new_stage"]
+            locus["competency_stage"] = stage_after
+
             rep, ef, interval = calculate_sm2(
                 locus.get("repetitions", 0),
                 locus.get("ease_factor", 2.5),
@@ -175,11 +223,67 @@ async def submit_drill(req: Request):
                 max(0.1, min(1.0, locus.get("stability_score", 0.75) + weight)), 2
             )
             break
+
     with open("data/palace_map.json", "w", encoding="utf-8") as f:
         json.dump(palace, f, indent=2)
         f.write("\n")
 
-    return {"status": "recorded", "locus_id": locus_id, "score": score, "latency_ms": latency_ms}
+    record_interaction(
+        locus_id=locus_id,
+        latency_ms=latency_ms,
+        score=score,
+        distractor=distractor,
+        stage_before=stage_before,
+        stage_after=stage_after,
+        boundary_passed=bool(boundary_passed),
+        tradeoffs_logged=tradeoffs,
+        failure_modes_logged=failure_modes,
+    )
+
+    return {
+        "status": "recorded",
+        "locus_id": locus_id,
+        "score": score,
+        "latency_ms": latency_ms,
+        "stage_before": stage_before,
+        "stage_after": stage_after,
+    }
+
+
+@app.post("/api/competency/evaluate")
+async def evaluate_competency(req: Request):
+    payload = await req.json()
+    locus_id = payload["locus_id"]
+    response_text = payload.get("response_text", "")
+    latency_ms = int(payload.get("latency_ms", 2000))
+
+    with open("data/palace_map.json", "r", encoding="utf-8") as f:
+        palace = json.load(f)
+    distractors = []
+    for loc in palace.get("loci", []):
+        if loc["id"] == locus_id:
+            distractors = loc.get("confusion_pairs", [])
+            break
+
+    rubric_result = evaluate_candidate_response(response_text, distractors=distractors)
+    evidence = rubric_to_evidence(rubric_result, factual_latency_ms=latency_ms)
+    transition = apply_competency_transition(locus_id, evidence)
+
+    record_interaction(
+        locus_id=locus_id,
+        latency_ms=latency_ms,
+        score=5 if evidence.correct_boundary_identified else 2,
+        stage_before=transition["stage_before"],
+        stage_after=transition["stage_after"],
+        boundary_passed=evidence.correct_boundary_identified,
+        tradeoffs_logged=evidence.tradeoffs_addressed,
+        failure_modes_logged=evidence.failure_modes_mitigated,
+    )
+
+    return {
+        **transition,
+        "rubric": rubric_result,
+    }
 
 
 @app.get("/api/metrics")

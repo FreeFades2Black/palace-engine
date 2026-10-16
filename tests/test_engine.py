@@ -1,12 +1,23 @@
 import json
 import shutil
+import sqlite3
 from pathlib import Path
 from fastapi.testclient import TestClient
 
 from engine.adaptive_srs import calculate_sm2, process_daily_test_results
 from engine.cognitive_linter import audit_loci_quality
+from engine.competency_gate import (
+    CompetencyEvidence,
+    CompetencyGate,
+    apply_competency_transition,
+)
 from engine.correlate import correlate_palace_with_trends
 from engine.db import get_telemetry_metrics, init_db, record_interaction
+from engine.evaluator_rubric import (
+    RUBRIC_EVALUATION_PROMPT,
+    evaluate_candidate_response,
+    rubric_to_evidence,
+)
 from engine.parser import load_palace_map, load_taxonomy, parse_recall_logs
 from engine.scoring import evaluate_gaps
 from engine.scraper import analyze_trends
@@ -38,14 +49,69 @@ def test_cognitive_linter():
     assert issues == [], f"Expected zero cognitive lint issues, found: {issues}"
 
 
+def test_competency_gate_and_rubric(tmp_path):
+    assert "FACTUAL_PRECISION" in RUBRIC_EVALUATION_PROMPT
+    assert "BOUNDARY_DISCRIMINATION" in RUBRIC_EVALUATION_PROMPT
+
+    # Stage 1 -> Stage 2 promotion (<= 2200ms and boundary identified)
+    gate1 = CompetencyGate("hallway_thermostat", current_stage=1)
+    ev1 = CompetencyEvidence(factual_latency_ms=1800, correct_boundary_identified=True)
+    res1 = gate1.evaluate_promotion(ev1)
+    assert res1["new_stage"] == 2
+    assert res1["action"] == "PROMOTE"
+
+    # Stage 2 -> Stage 1 demotion on boundary failure
+    gate2 = CompetencyGate("driveway_road", current_stage=2)
+    ev_fail = CompetencyEvidence(factual_latency_ms=1500, correct_boundary_identified=False)
+    res_demote = gate2.evaluate_promotion(ev_fail)
+    assert res_demote["new_stage"] == 1
+    assert res_demote["action"] == "DEMOTE"
+
+    # Stage 2 -> Stage 3 promotion (boundary + >= 2 tradeoffs)
+    ev2 = CompetencyEvidence(
+        factual_latency_ms=2500,
+        correct_boundary_identified=True,
+        tradeoffs_addressed=["cost", "latency"],
+    )
+    res2 = gate2.evaluate_promotion(ev2)
+    assert res2["new_stage"] == 3
+    assert res2["action"] == "PROMOTE"
+
+    # Stage 3 -> Stage 4 mastery (boundary + >= 3 tradeoffs + >= 1 failure mode)
+    gate3 = CompetencyGate("front_door", current_stage=3)
+    ev3 = CompetencyEvidence(
+        factual_latency_ms=3000,
+        correct_boundary_identified=True,
+        tradeoffs_addressed=["cost", "latency", "operational_overhead"],
+        failure_modes_mitigated=["poison_pill", "duplicate_execution"],
+    )
+    res3 = gate3.evaluate_promotion(ev3)
+    assert res3["new_stage"] == 4
+    assert res3["action"] == "PROMOTE_TO_MASTERY"
+
+    # Verify rubric evaluation and apply_competency_transition
+    rubric = evaluate_candidate_response(
+        "SQS FIFO 14-day retention vs Kinesis: addresses cost, latency, and operational overhead while using a DLQ redrive policy for poison pill and duplicate messages.",
+        distractors=["Kinesis Data Streams"],
+    )
+    assert rubric["boundary_discrimination"] is True
+    assert len(rubric["tradeoffs_identified"]) >= 3
+    assert len(rubric["failure_modes_covered"]) >= 1
+
+    evidence_obj = rubric_to_evidence(rubric, factual_latency_ms=1900)
+    temp_palace = tmp_path / "palace_map.json"
+    shutil.copy(Path("data/palace_map.json"), temp_palace)
+    transition = apply_competency_transition("front_door", evidence_obj, str(temp_palace))
+    assert transition["stage_before"] == 3
+    assert transition["stage_after"] == 4
+
+
 def test_adaptive_srs_and_sm2(tmp_path):
-    # Verify SM-2 collapse on failure (< 3)
     rep, ef, interval = calculate_sm2(repetition=4, ease_factor=2.5, interval=15, quality=2)
     assert rep == 0
     assert interval == 1
     assert ef < 2.5
 
-    # Verify SM-2 progression on instant recall (5)
     rep2, ef2, interval2 = calculate_sm2(repetition=2, ease_factor=2.5, interval=6, quality=5)
     assert rep2 == 3
     assert interval2 == 15
@@ -101,11 +167,27 @@ def test_scoring_and_suggestions(tmp_path):
 def test_db_and_fastapi_deck(tmp_path):
     test_db = tmp_path / "interactions.db"
     init_db(test_db)
-    record_interaction("driveway_road", 4200, 5, db_path=test_db)
+    record_interaction(
+        "driveway_road",
+        1800,
+        5,
+        stage_before=1,
+        stage_after=2,
+        boundary_passed=True,
+        tradeoffs_logged=["cost", "latency"],
+        failure_modes_logged=["poison_pill"],
+        db_path=test_db,
+    )
     metrics = get_telemetry_metrics(test_db)
     assert metrics["total_drills"] == 1
-    assert metrics["avg_latency_ms"] == 4200.0
+    assert metrics["avg_latency_ms"] == 1800.0
     assert metrics["pass_rate"] == 100.0
+
+    with sqlite3.connect(test_db) as conn:
+        row = conn.execute(
+            "SELECT stage_before, stage_after, boundary_passed, tradeoffs_logged, failure_modes_logged FROM drill_interactions"
+        ).fetchone()
+    assert row == (1, 2, 1, '["cost", "latency"]', '["poison_pill"]')
 
     client = TestClient(app)
     resp = client.get("/")

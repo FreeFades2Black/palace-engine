@@ -37,9 +37,11 @@ jobs:
         run: |
           python -m pytest -v
 
-      - name: Execute Gap Analysis, Trend Correlation & Spaced Repetition Engine
+      - name: Execute Competency Gate, Trend Correlation & Spaced Repetition Engine
         run: |
           python engine/cognitive_linter.py > evaluation_summary.txt
+          echo "" >> evaluation_summary.txt
+          python engine/competency_gate.py >> evaluation_summary.txt
           echo "" >> evaluation_summary.txt
           python engine/correlate.py >> evaluation_summary.txt
           python engine/scoring.py >> evaluation_summary.txt
@@ -49,7 +51,7 @@ jobs:
 
       - name: Post Job Summary to GitHub Actions
         run: |
-          echo "### AWS SAA-C03 Memory Palace & Gap Report" >> $GITHUB_STEP_SUMMARY
+          echo "### AWS SAA-C03 Memory Palace & Evidentiary Gate Report" >> $GITHUB_STEP_SUMMARY
           echo '```text' >> $GITHUB_STEP_SUMMARY
           cat evaluation_summary.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

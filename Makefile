@@ -1,4 +1,4 @@
-.PHONY: install evaluate suggest scrape correlate lint srs serve scrub test all
+.PHONY: install evaluate suggest scrape correlate lint srs gate serve scrub test all
 
 PYTHON ?= python3
 
@@ -7,6 +7,9 @@ install:
 
 lint:
 	$(PYTHON) engine/cognitive_linter.py
+
+gate:
+	$(PYTHON) engine/competency_gate.py
 
 scrape:
 	$(PYTHON) engine/scraper.py
@@ -32,4 +35,4 @@ test:
 scrub:
 	bash scripts/quality_scrub.sh
 
-all: lint correlate test evaluate suggest
+all: lint gate correlate test evaluate suggest
