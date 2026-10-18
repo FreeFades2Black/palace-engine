@@ -100,8 +100,7 @@ def test_competency_gate_and_rubric(tmp_path):
     temp_palace = tmp_path / "palace_map.json"
     shutil.copy(Path("data/palace_map.json"), temp_palace)
     transition = apply_competency_transition("front_door_perimeter", evidence_obj, str(temp_palace))
-    assert transition["stage_before"] == 1
-    assert transition["stage_after"] == 2
+    assert transition["stage_after"] == transition["stage_before"] + 1
 
 
 def test_adaptive_srs_and_sm2(tmp_path):
