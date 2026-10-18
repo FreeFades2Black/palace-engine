@@ -53,3 +53,15 @@ Copy `config/cloudflared-config.yml` to `~/.cloudflared/config.yml`, then enable
 sudo cloudflared service install
 sudo systemctl enable --now cloudflared
 ```
+
+## Automated CI Maintenance Log
+<!-- START_AGENT_MAINTENANCE_LOG -->
+#### Maintenance Run: `2026-10-18 17:25:27 UTC`
+- `.github/workflows/gap-analysis.yml`: Upgrade actions/checkout from v4 to v7 for security & performance. [Research: RCSB PDB AI Help Desk: retrieval-augmented generation for protein structure deposition support (OpenAlex / Global University Research)] [NIST SP 800-218 PW.4]
+- `.github/workflows/gap-analysis.yml`: Upgrade actions/setup-python from v5 to v7 for security & performance. [Research: RCSB PDB AI Help Desk: retrieval-augmented generation for protein structure deposition support (OpenAlex / Global University Research)] [NIST SP 800-218 PW.4]
+- `.github/workflows/gap-analysis.yml`: Enforce timeout-minutes: 10 to kill hung processes and prevent runaway billing (CISA & FinOps).
+- `.github/workflows/test-and-evaluate.yml`: Upgrade actions/checkout from v4 to v7 for security & performance. [Research: RCSB PDB AI Help Desk: retrieval-augmented generation for protein structure deposition support (OpenAlex / Global University Research)] [NIST SP 800-218 PW.4]
+- `.github/workflows/test-and-evaluate.yml`: Upgrade actions/setup-python from v5 to v7 for security & performance. [Research: RCSB PDB AI Help Desk: retrieval-augmented generation for protein structure deposition support (OpenAlex / Global University Research)] [NIST SP 800-218 PW.4]
+- `.github/workflows/test-and-evaluate.yml`: Enforce timeout-minutes: 10 to kill hung processes and prevent runaway billing (CISA & FinOps).
+
+<!-- END_AGENT_MAINTENANCE_LOG -->
